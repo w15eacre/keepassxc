@@ -8640,6 +8640,10 @@ This option is deprecated, use --set-key-file instead.</source>
             <numerusform></numerusform>
         </translation>
     </message>
+    <message>
+        <source>Passkey</source>
+        <translation type="unfinished"></translation>
+    </message>
 </context>
 <context>
     <name>QtIOCompressor</name>
