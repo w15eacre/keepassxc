@@ -189,6 +189,10 @@ MainWindow::MainWindow()
     connect(m_ui->tabWidget, &DatabaseTabWidget::databaseLocked, this, &MainWindow::databaseLocked);
     connect(m_ui->tabWidget, &DatabaseTabWidget::databaseUnlocked, this, &MainWindow::databaseUnlocked);
     connect(m_ui->tabWidget, &DatabaseTabWidget::activeDatabaseChanged, this, &MainWindow::activeDatabaseChanged);
+    connect(m_ui->tabWidget,
+            &DatabaseTabWidget::databaseUnlockDialogFinished,
+            this,
+            &MainWindow::databaseUnlockDialogFinished);
 
 #ifdef WITH_XC_BROWSER
     m_ui->settingsWidget->addSettingsPage(new BrowserSettingsPage());
