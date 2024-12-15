@@ -98,6 +98,7 @@ public:
         GUI_CheckForUpdatesIncludeBetas,
         GUI_ShowExpiredEntriesOnDatabaseUnlock,
         GUI_ShowExpiredEntriesOnDatabaseUnlockOffsetDays,
+        GUI_FontSizeOffset,
 
         GUI_MainWindowGeometry,
         GUI_MainWindowState,
