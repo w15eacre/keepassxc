@@ -588,14 +588,12 @@ MainWindow::MainWindow()
 
     connect(osUtils, &OSUtilsBase::statusbarThemeChanged, this, &MainWindow::updateTrayIcon);
 
-#if QT_VERSION >= QT_VERSION_CHECK(5, 15, 0)
-    // Install event filter for empty-area drag
+    // Install event filter for empty-area drag and menubar toggle
     auto* eventFilter = new MainWindowEventFilter(this);
     m_ui->menubar->installEventFilter(eventFilter);
     m_ui->toolBar->installEventFilter(eventFilter);
     m_ui->tabWidget->tabBar()->installEventFilter(eventFilter);
     installEventFilter(eventFilter);
-#endif
 
 #ifdef Q_OS_MACOS
     setUnifiedTitleAndToolBarOnMac(true);
@@ -2039,11 +2037,29 @@ void MainWindow::initViewMenu()
     });
 }
 
-#if QT_VERSION >= QT_VERSION_CHECK(5, 15, 0)
-
 MainWindowEventFilter::MainWindowEventFilter(QObject* parent)
     : QObject(parent)
 {
+    m_altCoolDown.setInterval(250);
+    m_altCoolDown.setSingleShot(true);
+
+    m_menubarTimer.setInterval(250);
+    m_menubarTimer.setSingleShot(false);
+    connect(&m_menubarTimer, &QTimer::timeout, this, [this] {
+        auto mainwindow = getMainWindow();
+        if (mainwindow && mainwindow->m_ui->menubar->isVisible() && config()->get(Config::GUI_HideMenubar).toBool()) {
+            // If the menu bar is visible with no active menu, hide it
+            if (!mainwindow->m_ui->menubar->activeAction()) {
+                mainwindow->m_ui->menubar->setVisible(false);
+                m_altCoolDown.start();
+                m_menubarTimer.stop();
+            }
+            // Conditions to hide the menubar or stop the timer have not been met
+            return;
+        }
+        // We no longer need the timer
+        m_menubarTimer.stop();
+    });
 }
 
 /**
@@ -2059,6 +2075,8 @@ bool MainWindowEventFilter::eventFilter(QObject* watched, QEvent* event)
 
     auto eventType = event->type();
     if (eventType == QEvent::MouseButtonPress) {
+#if QT_VERSION >= QT_VERSION_CHECK(5, 15, 0)
+        // startSystemMove was introduced in Qt 5.15
         auto mouseEvent = dynamic_cast<QMouseEvent*>(event);
         if (watched == mainWindow->m_ui->menubar) {
             if (!mainWindow->m_ui->menubar->actionAt(mouseEvent->pos())) {
@@ -2076,22 +2094,22 @@ bool MainWindowEventFilter::eventFilter(QObject* watched, QEvent* event)
                 return true;
             }
         }
-    } else if (eventType == QEvent::KeyRelease) {
-        if (watched == mainWindow) {
-            auto keyEvent = dynamic_cast<QKeyEvent*>(event);
-            if (keyEvent->key() == Qt::Key_Alt && !keyEvent->modifiers()
-                && config()->get(Config::GUI_HideMenubar).toBool()) {
-                auto menubar = mainWindow->m_ui->menubar;
-                menubar->setVisible(!menubar->isVisible());
-                if (menubar->isVisible()) {
-                    menubar->setActiveAction(mainWindow->m_ui->menuFile->menuAction());
-                }
-                return false;
+#endif
+    } else if (eventType == QEvent::KeyRelease && watched == mainWindow) {
+        auto keyEvent = dynamic_cast<QKeyEvent*>(event);
+        if (keyEvent->key() == Qt::Key_Alt && !keyEvent->modifiers() && config()->get(Config::GUI_HideMenubar).toBool()
+            && !m_altCoolDown.isActive()) {
+            auto menubar = mainWindow->m_ui->menubar;
+            menubar->setVisible(!menubar->isVisible());
+            if (menubar->isVisible()) {
+                menubar->setActiveAction(mainWindow->m_ui->menuFile->menuAction());
+                m_menubarTimer.start();
+            } else {
+                m_menubarTimer.stop();
             }
+            return true;
         }
     }
 
     return QObject::eventFilter(watched, event);
 }
-
-#endif

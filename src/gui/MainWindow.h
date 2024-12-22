@@ -204,7 +204,6 @@ private:
     friend class MainWindowEventFilter;
 };
 
-#if QT_VERSION >= QT_VERSION_CHECK(5, 15, 0)
 class MainWindowEventFilter : public QObject
 {
     Q_OBJECT
@@ -212,8 +211,11 @@ class MainWindowEventFilter : public QObject
 public:
     explicit MainWindowEventFilter(QObject* parent);
     bool eventFilter(QObject* watched, QEvent* event) override;
+
+private:
+    QTimer m_menubarTimer;
+    QTimer m_altCoolDown;
 };
-#endif
 
 /**
  * Return instance of MainWindow created on app load
