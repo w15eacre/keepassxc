@@ -2006,6 +2006,11 @@ void MainWindow::initViewMenu()
         applySettingsChanges();
     });
 
+    m_ui->actionShowGroupPanel->setChecked(!config()->get(Config::GUI_HideGroupPanel).toBool());
+    connect(m_ui->actionShowGroupPanel, &QAction::toggled, this, [](bool checked) {
+        config()->set(Config::GUI_HideGroupPanel, !checked);
+    });
+
     m_ui->actionShowPreviewPanel->setChecked(!config()->get(Config::GUI_HidePreviewPanel).toBool());
     connect(m_ui->actionShowPreviewPanel, &QAction::toggled, this, [](bool checked) {
         config()->set(Config::GUI_HidePreviewPanel, !checked);
