@@ -99,10 +99,8 @@ void YubiKey::findValidKeysAsync()
 YubiKey::KeyMap YubiKey::foundKeys()
 {
     QMutexLocker lock(&s_interfaceMutex);
-    KeyMap foundKeys;
-
-    foundKeys.insert(m_usbKeys);
-    foundKeys.insert(m_pcscKeys);
+    KeyMap foundKeys = m_usbKeys;
+    foundKeys.unite(m_pcscKeys);
 
     return foundKeys;
 }

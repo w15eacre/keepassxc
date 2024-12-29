@@ -20,8 +20,6 @@
 #include "core/Tools.h"
 #include "crypto/Random.h"
 
-#include <QScopeGuard>
-
 // MSYS2 does not define these macros
 // So set them to the value used by pcsc-lite
 #ifndef MAX_ATR_SIZE
@@ -514,6 +512,29 @@ namespace
         });
     }
 
+    class ScopeGuard
+    {
+    public:
+        template <typename F>
+        explicit ScopeGuard(F&& fn)
+            : m_function(std::forward<F>(fn))
+        {
+            static_assert(std::is_convertible_v<F, std::function<void()>>,
+                          "the functor F isn't convertible to std::function<void()>");
+            static_assert(std::is_invocable_v<F>, "The functor F isn't invocable");
+        }
+
+        ~ScopeGuard()
+        {
+            if (m_function) {
+                m_function();
+            }
+        }
+
+    private:
+        std::function<void()> m_function{};
+    };
+
 } // namespace
 
 YubiKeyInterfacePCSC::YubiKeyInterfacePCSC()
@@ -580,7 +601,7 @@ YubiKey::KeyMap YubiKeyInterfacePCSC::findValidKeys()
             continue;
         }
 
-        QScopeGuard disconnect([hCard]() { SCardDisconnect(hCard, SCARD_LEAVE_CARD); });
+        ScopeGuard disconnect{[hCard]() { SCardDisconnect(hCard, SCARD_LEAVE_CARD); }};
 
         // Read the protocol and the ATR record
         char pbReader[MAX_READERNAME] = {0};
@@ -679,7 +700,7 @@ YubiKey::KeyList YubiKeyInterfacePCSC::findKeys()
             continue;
         }
 
-        QScopeGuard disconnect([hCard]() { SCardDisconnect(hCard, SCARD_LEAVE_CARD); });
+        ScopeGuard disconnect([hCard]() { SCardDisconnect(hCard, SCARD_LEAVE_CARD); });
 
         // Read the protocol and the ATR record
         char pbReader[MAX_READERNAME] = {0};
