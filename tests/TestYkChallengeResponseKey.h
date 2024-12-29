@@ -29,6 +29,7 @@ private slots:
     void initTestCase();
 
     void testDetectDevices();
+    void testDetectConnectedDevices();
     void testKeyChallenge();
 };
 

@@ -20,6 +20,8 @@
 #include "core/Tools.h"
 #include "crypto/Random.h"
 
+#include <QScopeGuard>
+
 // MSYS2 does not define these macros
 // So set them to the value used by pcsc-lite
 #ifndef MAX_ATR_SIZE
@@ -578,6 +580,8 @@ YubiKey::KeyMap YubiKeyInterfacePCSC::findValidKeys()
             continue;
         }
 
+        QScopeGuard disconnect([hCard]() { SCardDisconnect(hCard, SCARD_LEAVE_CARD); });
+
         // Read the protocol and the ATR record
         char pbReader[MAX_READERNAME] = {0};
         SCUINT dwReaderLen = sizeof(pbReader);
@@ -632,6 +636,76 @@ YubiKey::KeyMap YubiKeyInterfacePCSC::findValidKeys()
                                             : tr("Passive", "USB Challenge-Response Key no interaction required"));
                     foundKeys.insert({serial, slot}, display);
                 }
+            }
+        }
+    }
+
+    return foundKeys;
+}
+
+YubiKey::KeyList YubiKeyInterfacePCSC::findKeys()
+{
+    m_error.clear();
+    if (!isInitialized()) {
+        return {};
+    }
+
+    YubiKey::KeyList foundKeys;
+
+    // Connect to each reader and look for cards
+    for (const auto& reader_name : getReaders(m_sc_context)) {
+        /* Some Yubikeys present their PCSC interface via USB as well
+           Although this would not be a problem in itself,
+           we filter these connections because in USB mode,
+           the PCSC challenge-response interface is usually locked
+           Instead, the other USB (HID) interface should pick up and
+           interface the key.
+           For more info see the comment block further below. */
+        if (reader_name.contains("yubikey", Qt::CaseInsensitive)) {
+            continue;
+        }
+
+        SCARDHANDLE hCard;
+        SCUINT dwActiveProtocol = SCARD_PROTOCOL_UNDEFINED;
+        auto rv = SCardConnect(m_sc_context,
+                               reader_name.toStdString().c_str(),
+                               SCARD_SHARE_SHARED,
+                               SCARD_PROTOCOL_T0 | SCARD_PROTOCOL_T1,
+                               &hCard,
+                               &dwActiveProtocol);
+
+        if (rv != SCARD_S_SUCCESS) {
+            // Cannot connect to the reader
+            continue;
+        }
+
+        QScopeGuard disconnect([hCard]() { SCardDisconnect(hCard, SCARD_LEAVE_CARD); });
+
+        // Read the protocol and the ATR record
+        char pbReader[MAX_READERNAME] = {0};
+        SCUINT dwReaderLen = sizeof(pbReader);
+        SCUINT dwState = 0;
+        SCUINT dwProt = SCARD_PROTOCOL_UNDEFINED;
+        uint8_t pbAtr[MAX_ATR_SIZE] = {0};
+        SCUINT dwAtrLen = sizeof(pbAtr);
+
+        rv = SCardStatus(hCard, pbReader, &dwReaderLen, &dwState, &dwProt, pbAtr, &dwAtrLen);
+        if (rv != SCARD_S_SUCCESS || (dwProt != SCARD_PROTOCOL_T0 && dwProt != SCARD_PROTOCOL_T1)) {
+            // Could not read the ATR record or the protocol is not supported
+            continue;
+        }
+
+        // Find which AID to use
+        SCardAID satr;
+        if (findAID(hCard, m_aid_codes, satr)) {
+            // Build the UI name using the display name found in the ATR map
+            QByteArray atr(reinterpret_cast<char*>(pbAtr), dwAtrLen);
+
+            unsigned int serial = 0;
+            getSerial(satr, serial);
+
+            if (serial != 0) {
+                foundKeys.append(serial);
             }
         }
     }

@@ -18,16 +18,25 @@
 
 #include "YubiKeyInterfaceUSB.h"
 
-#include "core/Tools.h"
 #include "crypto/Random.h"
 #include "thirdparty/ykcore/ykcore.h"
 #include "thirdparty/ykcore/ykstatus.h"
+
+#include <memory>
 
 namespace
 {
     constexpr int MAX_KEYS = 4;
 
-    YK_KEY* openKey(int index)
+    void closeKey(YK_KEY* key)
+    {
+        yk_close_key(key);
+    }
+
+    using Yubikey = std::unique_ptr<YK_KEY, decltype(&closeKey)>;
+    using YubikeyStatus = std::unique_ptr<YK_STATUS, decltype(&ykds_free)>;
+
+    Yubikey openKey(int index)
     {
         static const int vids[] = {YUBICO_VID, ONLYKEY_VID};
         static const int pids[] = {YUBIKEY_PID,
@@ -42,12 +51,9 @@ namespace
                                    PLUS_U2F_OTP_PID,
                                    ONLYKEY_PID};
 
-        return yk_open_key_vid_pid(vids, sizeof(vids) / sizeof(vids[0]), pids, sizeof(pids) / sizeof(pids[0]), index);
-    }
-
-    void closeKey(YK_KEY* key)
-    {
-        yk_close_key(key);
+        return Yubikey{
+            yk_open_key_vid_pid(vids, sizeof(vids) / sizeof(vids[0]), pids, sizeof(pids) / sizeof(pids[0]), index),
+            &closeKey};
     }
 
     void printError()
@@ -69,24 +75,25 @@ namespace
         return serial;
     }
 
-    YK_KEY* openKeySerial(unsigned int serial)
+    Yubikey openKeySerial(unsigned int serial)
     {
         for (int i = 0; i < MAX_KEYS; ++i) {
-            auto* yk_key = openKey(i);
-            if (yk_key) {
+            auto key = openKey(i);
+            if (key) {
                 // If the provided serial number is 0, or the key matches the serial, return it
-                if (serial == 0 || getSerial(yk_key) == serial) {
-                    return yk_key;
+                if (serial == 0 || getSerial(key.get()) == serial) {
+                    return key;
                 }
-                closeKey(yk_key);
             } else if (yk_errno == YK_ENOKEY) {
                 // No more connected keys
                 break;
             }
             printError();
         }
-        return nullptr;
+
+        return Yubikey{nullptr, &closeKey};
     }
+
 } // namespace
 
 YubiKeyInterfaceUSB::YubiKeyInterfaceUSB()
@@ -127,29 +134,28 @@ YubiKey::KeyMap YubiKeyInterfaceUSB::findValidKeys()
     for (int i = 0; i < MAX_KEYS; ++i) {
         auto yk_key = openKey(i);
         if (yk_key) {
-            auto serial = getSerial(yk_key);
+            auto serial = getSerial(yk_key.get());
             if (serial == 0) {
-                closeKey(yk_key);
                 continue;
             }
 
-            auto st = ykds_alloc();
-            yk_get_status(yk_key, st);
+            YubikeyStatus st{ykds_alloc(), &ykds_free};
+            yk_get_status(yk_key.get(), st.get());
             int vid, pid;
-            yk_get_key_vid_pid(yk_key, &vid, &pid);
+            yk_get_key_vid_pid(yk_key.get(), &vid, &pid);
 
             QString name = m_pid_names.value(pid, tr("Unknown"));
             if (vid == ONLYKEY_VID) {
                 name = QStringLiteral("OnlyKey %ver");
             }
             if (name.contains("%ver")) {
-                name = name.replace("%ver", QString::number(ykds_version_major(st)));
+                name = name.replace("%ver", QString::number(ykds_version_major(st.get())));
             }
 
             bool wouldBlock;
             for (int slot = 1; slot <= 2; ++slot) {
                 auto config = (slot == 1 ? CONFIG1_VALID : CONFIG2_VALID);
-                if (!(ykds_touch_level(st) & config)) {
+                if (!(ykds_touch_level(st.get()) & config)) {
                     // Slot is not configured
                     continue;
                 }
@@ -159,7 +165,7 @@ YubiKey::KeyMap YubiKeyInterfaceUSB::findValidKeys()
                     auto display = tr("%1 [%2] - Slot %3", "YubiKey NEO display fields")
                                        .arg(name, QString::number(serial), QString::number(slot));
                     keyMap.insert({serial, slot}, display);
-                } else if (performTestChallenge(yk_key, slot, &wouldBlock)) {
+                } else if (performTestChallenge(yk_key.get(), slot, &wouldBlock)) {
                     auto display =
                         tr("%1 [%2] - Slot %3, %4", "YubiKey display fields")
                             .arg(name,
@@ -170,9 +176,6 @@ YubiKey::KeyMap YubiKeyInterfaceUSB::findValidKeys()
                     keyMap.insert({serial, slot}, display);
                 }
             }
-
-            ykds_free(st);
-            closeKey(yk_key);
         } else if (yk_errno == YK_ENOKEY) {
             // No more keys are connected
             break;
@@ -186,6 +189,37 @@ YubiKey::KeyMap YubiKeyInterfaceUSB::findValidKeys()
     return keyMap;
 }
 
+YubiKey::KeyList YubiKeyInterfaceUSB::findKeys()
+{
+    m_error.clear();
+    if (!isInitialized()) {
+        return {};
+    }
+
+    YubiKey::KeyList keyList{};
+
+    // Try to detect up to 4 connected hardware keys
+    for (int i = 0; i < MAX_KEYS; ++i) {
+        if (auto yk_key = openKey(i); yk_key) {
+            auto serial = getSerial(yk_key.get());
+            if (serial == 0) {
+                continue;
+            }
+
+            keyList.append(serial);
+        } else if (yk_errno == YK_ENOKEY) {
+            // No more keys are connected
+            break;
+        } else if (yk_errno == YK_EUSBERR) {
+            qWarning("Hardware key USB error: %s", yk_usb_strerror());
+        } else {
+            qWarning("Hardware key error: %s", yk_strerror(yk_errno));
+        }
+    }
+
+    return keyList;
+}
+
 /**
  * Issue a test challenge to the specified slot to determine if challenge
  * response is properly configured.
@@ -197,11 +231,11 @@ YubiKey::KeyMap YubiKeyInterfaceUSB::findValidKeys()
 bool YubiKeyInterfaceUSB::testChallenge(YubiKeySlot slot, bool* wouldBlock)
 {
     bool ret = false;
-    auto* yk_key = openKeySerial(slot.first);
+    auto yk_key = openKeySerial(slot.first);
     if (yk_key) {
-        ret = performTestChallenge(yk_key, slot.second, wouldBlock);
+        ret = performTestChallenge(yk_key.get(), slot.second, wouldBlock);
     }
-    closeKey(yk_key);
+
     return ret;
 }
 
@@ -237,7 +271,7 @@ YubiKeyInterfaceUSB::challenge(YubiKeySlot slot, const QByteArray& challenge, Bo
         return YubiKey::ChallengeResult::YCR_ERROR;
     }
 
-    auto* yk_key = openKeySerial(slot.first);
+    auto yk_key = openKeySerial(slot.first);
     if (!yk_key) {
         // Key with specified serial number is not connected
         m_error =
@@ -246,9 +280,8 @@ YubiKeyInterfaceUSB::challenge(YubiKeySlot slot, const QByteArray& challenge, Bo
     }
 
     emit challengeStarted();
-    auto ret = performChallenge(yk_key, slot.second, true, challenge, response);
+    auto ret = performChallenge(yk_key.get(), slot.second, true, challenge, response);
 
-    closeKey(yk_key);
     emit challengeCompleted();
 
     return ret;

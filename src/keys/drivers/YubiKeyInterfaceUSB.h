@@ -36,6 +36,7 @@ public:
     static constexpr int ONLYKEY_USB_VID = ONLYKEY_VID;
 
     YubiKey::KeyMap findValidKeys() override;
+    YubiKey::KeyList findKeys() override;
 
     YubiKey::ChallengeResult
     challenge(YubiKeySlot slot, const QByteArray& challenge, Botan::secure_vector<char>& response) override;

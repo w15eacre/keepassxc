@@ -81,6 +81,16 @@ bool YubiKey::findValidKeys()
     return !m_usbKeys.isEmpty() || !m_pcscKeys.isEmpty();
 }
 
+bool YubiKey::findConnectedKeys()
+{
+    QMutexLocker lock(&s_interfaceMutex);
+
+    m_usbConnectedKeys = YubiKeyInterfaceUSB::instance()->findKeys();
+    m_pcscConnectedKeys = YubiKeyInterfacePCSC::instance()->findKeys();
+
+    return !m_usbConnectedKeys.isEmpty() || !m_pcscConnectedKeys.isEmpty();
+}
+
 void YubiKey::findValidKeysAsync()
 {
     QtConcurrent::run([this] { emit detectComplete(findValidKeys()); });
@@ -91,13 +101,21 @@ YubiKey::KeyMap YubiKey::foundKeys()
     QMutexLocker lock(&s_interfaceMutex);
     KeyMap foundKeys;
 
-    for (auto i = m_usbKeys.cbegin(); i != m_usbKeys.cend(); ++i) {
-        foundKeys.insert(i.key(), i.value());
-    }
+    foundKeys.insert(m_usbKeys);
+    foundKeys.insert(m_pcscKeys);
 
-    for (auto i = m_pcscKeys.cbegin(); i != m_pcscKeys.cend(); ++i) {
-        foundKeys.insert(i.key(), i.value());
-    }
+    return foundKeys;
+}
+
+YubiKey::KeyList YubiKey::foundConnectedKeys()
+{
+    QMutexLocker lock(&s_interfaceMutex);
+
+    KeyList foundKeys;
+    foundKeys.reserve(m_usbConnectedKeys.size() + m_pcscConnectedKeys.size());
+
+    foundKeys.append(m_usbConnectedKeys);
+    foundKeys.append(m_pcscConnectedKeys);
 
     return foundKeys;
 }
