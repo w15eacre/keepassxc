@@ -520,8 +520,8 @@ namespace
             : m_function(std::forward<F>(fn))
         {
             static_assert(std::is_convertible_v<F, std::function<void()>>,
-                          "the functor F isn't convertible to std::function<void()>");
-            static_assert(std::is_invocable_v<F>, "The functor F isn't invocable");
+                          "F-typed objects are not convertible to std::function<void()>");
+            static_assert(std::is_invocable_v<F>, "F-typed objects are not invocable");
         }
 
         ~ScopeGuard()
