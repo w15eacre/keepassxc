@@ -140,6 +140,11 @@ void DatabaseOpenWidget::toggleHardwareKeyComponent(bool state)
     m_ui->hardwareKeyProgress->setVisible(false);
     m_ui->hardwareKeyComponent->setVisible(state);
     m_ui->hardwareKeyCombo->setVisible(state && m_ui->hardwareKeyCombo->count() != 1);
+
+    m_ui->noHardwareKeysFoundLabel->setText(YubiKey::instance()->findConnectedKeys()
+                                                ? tr("Hardware keys found, but no slots are configured.")
+                                                : tr("No hardware keys found."));
+
     m_ui->noHardwareKeysFoundLabel->setVisible(!state && m_manualHardwareKeyRefresh);
     if (!state) {
         m_ui->useHardwareKeyCheckBox->setChecked(false);
