@@ -45,19 +45,14 @@ void YubiKey::findValidKeysAsync()
 {
 }
 
-bool YubiKey::findConnectedKeys()
-{
-    return false;
-}
-
 YubiKey::KeyMap YubiKey::foundKeys()
 {
     return {};
 }
 
-YubiKey::KeyList YubiKey::foundConnectedKeys()
+int YubiKey::connectedKeys()
 {
-    return {};
+    return 0;
 }
 
 QString YubiKey::errorMessage()

@@ -173,7 +173,7 @@ void YubiKeyEditWidget::hardwareKeyResponse(bool found)
 
     if (!found) {
         m_compUi->yubikeyProgress->setVisible(false);
-        m_compUi->comboChallengeResponse->addItem(YubiKey::instance()->findConnectedKeys()
+        m_compUi->comboChallengeResponse->addItem(YubiKey::instance()->connectedKeys() > 0
                                                       ? tr("Hardware keys found, but no slots are configured")
                                                       : tr("No hardware keys detected"));
         m_isDetected = false;

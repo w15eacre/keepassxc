@@ -57,17 +57,6 @@ void TestYubiKeyChallengeResponse::testDetectDevices()
     }
 }
 
-void TestYubiKeyChallengeResponse::testDetectConnectedDevices()
-{
-    YubiKey::instance()->findConnectedKeys();
-
-    const auto foundKeys = YubiKey::instance()->foundConnectedKeys();
-
-    for (const auto& serial : foundKeys) {
-        QVERIFY(serial != 0);
-    }
-}
-
 /**
  * Secret key for the YubiKey slot used by the unit test is
  * 1c e3 0f d7 8d 20 dc fa 40 b5 0c 18 77 9a fb 0f 02 28 8d b7

@@ -22,8 +22,6 @@
 #include "thirdparty/ykcore/ykcore.h"
 #include "thirdparty/ykcore/ykstatus.h"
 
-#include <memory>
-
 namespace
 {
     constexpr int MAX_KEYS = 4;
@@ -121,7 +119,7 @@ YubiKeyInterfaceUSB* YubiKeyInterfaceUSB::instance()
     return m_instance;
 }
 
-YubiKey::KeyMap YubiKeyInterfaceUSB::findValidKeys()
+YubiKey::KeyMap YubiKeyInterfaceUSB::findValidKeys(int& connectedKeys)
 {
     m_error.clear();
     if (!isInitialized()) {
@@ -138,6 +136,8 @@ YubiKey::KeyMap YubiKeyInterfaceUSB::findValidKeys()
             if (serial == 0) {
                 continue;
             }
+
+            ++connectedKeys;
 
             YubikeyStatus st{ykds_alloc(), &ykds_free};
             yk_get_status(yk_key.get(), st.get());
@@ -187,37 +187,6 @@ YubiKey::KeyMap YubiKeyInterfaceUSB::findValidKeys()
     }
 
     return keyMap;
-}
-
-YubiKey::KeyList YubiKeyInterfaceUSB::findKeys()
-{
-    m_error.clear();
-    if (!isInitialized()) {
-        return {};
-    }
-
-    YubiKey::KeyList keyList{};
-
-    // Try to detect up to 4 connected hardware keys
-    for (int i = 0; i < MAX_KEYS; ++i) {
-        if (auto yk_key = openKey(i); yk_key) {
-            auto serial = getSerial(yk_key.get());
-            if (serial == 0) {
-                continue;
-            }
-
-            keyList.append(serial);
-        } else if (yk_errno == YK_ENOKEY) {
-            // No more keys are connected
-            break;
-        } else if (yk_errno == YK_EUSBERR) {
-            qWarning("Hardware key USB error: %s", yk_usb_strerror());
-        } else {
-            qWarning("Hardware key error: %s", yk_strerror(yk_errno));
-        }
-    }
-
-    return keyList;
 }
 
 /**
