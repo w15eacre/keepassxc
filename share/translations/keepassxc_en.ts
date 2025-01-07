@@ -3980,6 +3980,10 @@ Error: %1</source>
 Would you like to overwrite the existing attachment?</source>
         <translation type="unfinished"></translation>
     </message>
+    <message>
+        <source>New</source>
+        <translation type="unfinished"></translation>
+    </message>
 </context>
 <context>
     <name>EntryAttributesModel</name>
@@ -6346,6 +6350,33 @@ Expect some bugs and minor issues, this version is meant for testing purposes.</
     </message>
     <message>
         <source>Please fill in the display name and an optional description for your new database:</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
+    <name>NewEntryAttachmentsDialog</name>
+    <message>
+        <source>New entry attachments</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>File name</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>File contents...</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Attachment name cannot be empty</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Attachment with the same name already exists</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Save attachment</source>
         <translation type="unfinished"></translation>
     </message>
 </context>

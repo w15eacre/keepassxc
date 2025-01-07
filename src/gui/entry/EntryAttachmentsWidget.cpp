@@ -16,6 +16,7 @@
  */
 
 #include "EntryAttachmentsWidget.h"
+#include "NewEntryAttachmentsDialog.h"
 #include "ui_EntryAttachmentsWidget.h"
 
 #include <QDir>
@@ -68,6 +69,7 @@ EntryAttachmentsWidget::EntryAttachmentsWidget(QWidget* parent)
     connect(m_ui->saveAttachmentButton, SIGNAL(clicked()), SLOT(saveSelectedAttachments()));
     connect(m_ui->openAttachmentButton, SIGNAL(clicked()), SLOT(openSelectedAttachments()));
     connect(m_ui->addAttachmentButton, SIGNAL(clicked()), SLOT(insertAttachments()));
+    connect(m_ui->newAttachmentButton, SIGNAL(clicked()), SLOT(newAttachments()));
     connect(m_ui->removeAttachmentButton, SIGNAL(clicked()), SLOT(removeSelectedAttachments()));
     connect(m_ui->renameAttachmentButton, SIGNAL(clicked()), SLOT(renameSelectedAttachments()));
 
@@ -161,6 +163,20 @@ void EntryAttachmentsWidget::insertAttachments()
         errorOccurred(errorMessage);
     }
     emit widgetUpdated();
+}
+
+void EntryAttachmentsWidget::newAttachments()
+{
+    Q_ASSERT(m_entryAttachments);
+    Q_ASSERT(!isReadOnly());
+    if (isReadOnly()) {
+        return;
+    }
+
+    auto newWidnow = new NewEntryAttachmentsDialog(m_entryAttachments, this);
+    if (newWidnow->exec() == QDialog::Accepted) {
+        emit widgetUpdated();
+    }
 }
 
 void EntryAttachmentsWidget::removeSelectedAttachments()
@@ -300,6 +316,7 @@ void EntryAttachmentsWidget::updateButtonsEnabled()
     const bool hasSelection = m_ui->attachmentsView->selectionModel()->hasSelection();
 
     m_ui->addAttachmentButton->setEnabled(!m_readOnly);
+    m_ui->newAttachmentButton->setEnabled(!m_readOnly);
     m_ui->removeAttachmentButton->setEnabled(hasSelection && !m_readOnly);
     m_ui->renameAttachmentButton->setEnabled(hasSelection && !m_readOnly);
 

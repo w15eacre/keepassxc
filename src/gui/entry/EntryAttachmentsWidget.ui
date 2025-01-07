@@ -52,6 +52,16 @@
        <number>0</number>
       </property>
       <item>
+       <widget class="QPushButton" name="newAttachmentButton">
+        <property name="enabled">
+         <bool>false</bool>
+        </property>
+        <property name="text">
+         <string>New</string>
+        </property>
+       </widget>
+      </item>
+      <item>
        <widget class="QPushButton" name="addAttachmentButton">
         <property name="enabled">
          <bool>false</bool>
