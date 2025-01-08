@@ -15,13 +15,11 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef NEWENTRYATTACHMENTSWIDGET_H
-#define NEWENTRYATTACHMENTSWIDGET_H
+#ifndef PREVIEWENTRYATTACHMENTSWIDGET_H
+#define PREVIEWENTRYATTACHMENTSWIDGET_H
 
 #include <QDialog>
 #include <QPointer>
-
-#include <optional>
 
 namespace Ui
 {
@@ -31,24 +29,38 @@ namespace Ui
 class QByteArray;
 class EntryAttachments;
 
-class NewEntryAttachmentsDialog : public QDialog
+class PreviewEntryAttachmentsDialog : public QDialog
 {
     Q_OBJECT
 public:
-    explicit NewEntryAttachmentsDialog(QPointer<EntryAttachments> attachments, QWidget* parent = nullptr);
-    ~NewEntryAttachmentsDialog() override;
+    explicit PreviewEntryAttachmentsDialog(QPointer<EntryAttachments> attachments, QWidget* parent = nullptr);
+    ~PreviewEntryAttachmentsDialog() override;
 
-private slots:
-    void saveAttachment();
-    void fileNameTextChanged(const QString& fileName);
+    void setAttachment(const QString& name);
 
 private:
-    std::optional<QString> ValidateFileName(const QString& fileName) const;
+    enum class AttachmentType
+    {
+        Image,
+        PlantText,
+        Unknown
+    };
+
+    void resizeEvent(QResizeEvent* event) override;
+
+    AttachmentType attachmentType(const QString& name) const;
+
+    void update();
+    void updateTextAttachment(const QByteArray& data);
+    void updateImageAttachment(const QByteArray& data);
 
 private:
     QPointer<EntryAttachments> m_attachments;
 
     QScopedPointer<Ui::EntryAttachmentsDialog> m_ui;
+
+    QString m_name;
+    AttachmentType m_type{AttachmentType::Unknown};
 };
 
-#endif // NEWENTRYATTACHMENTSWIDGET_H
+#endif // PREVIEWENTRYATTACHMENTSWIDGET_H

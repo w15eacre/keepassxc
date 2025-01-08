@@ -17,6 +17,7 @@
 
 #include "EntryAttachmentsWidget.h"
 #include "NewEntryAttachmentsDialog.h"
+#include "PreviewEntryAttachmentsDialog.h"
 #include "ui_EntryAttachmentsWidget.h"
 
 #include <QDir>
@@ -26,11 +27,11 @@
 #include <QTemporaryFile>
 
 #include "EntryAttachmentsModel.h"
-#include "core/Config.h"
 #include "core/EntryAttachments.h"
 #include "core/Tools.h"
 #include "gui/FileDialog.h"
 #include "gui/MessageBox.h"
+#include <QDebug>
 
 EntryAttachmentsWidget::EntryAttachmentsWidget(QWidget* parent)
     : QWidget(parent)
@@ -70,6 +71,7 @@ EntryAttachmentsWidget::EntryAttachmentsWidget(QWidget* parent)
     connect(m_ui->openAttachmentButton, SIGNAL(clicked()), SLOT(openSelectedAttachments()));
     connect(m_ui->addAttachmentButton, SIGNAL(clicked()), SLOT(insertAttachments()));
     connect(m_ui->newAttachmentButton, SIGNAL(clicked()), SLOT(newAttachments()));
+    connect(m_ui->previewButton, SIGNAL(clicked()), SLOT(previewAttachments()));
     connect(m_ui->removeAttachmentButton, SIGNAL(clicked()), SLOT(removeSelectedAttachments()));
     connect(m_ui->renameAttachmentButton, SIGNAL(clicked()), SLOT(renameSelectedAttachments()));
 
@@ -173,10 +175,26 @@ void EntryAttachmentsWidget::newAttachments()
         return;
     }
 
-    auto newWidnow = new NewEntryAttachmentsDialog(m_entryAttachments, this);
-    if (newWidnow->exec() == QDialog::Accepted) {
+    NewEntryAttachmentsDialog newEntryDialog{m_entryAttachments, this};
+    if (newEntryDialog.exec() == QDialog::Accepted) {
         emit widgetUpdated();
     }
+}
+
+void EntryAttachmentsWidget::previewAttachments()
+{
+    Q_ASSERT(m_entryAttachments);
+
+    const auto index = m_ui->attachmentsView->selectionModel()->selectedIndexes().first();
+    if (!index.isValid()) {
+        qWarning() << tr("Failed to preview an attachment: Attachment not found");
+        return;
+    }
+
+    PreviewEntryAttachmentsDialog previewDialog{m_entryAttachments, this};
+    previewDialog.setAttachment(m_attachmentsModel->keyByIndex(index));
+
+    previewDialog.exec();
 }
 
 void EntryAttachmentsWidget::removeSelectedAttachments()
@@ -321,12 +339,14 @@ void EntryAttachmentsWidget::updateButtonsEnabled()
     m_ui->renameAttachmentButton->setEnabled(hasSelection && !m_readOnly);
 
     m_ui->saveAttachmentButton->setEnabled(hasSelection);
+    m_ui->previewButton->setEnabled(hasSelection);
     m_ui->openAttachmentButton->setEnabled(hasSelection);
 }
 
 void EntryAttachmentsWidget::updateButtonsVisible()
 {
     m_ui->addAttachmentButton->setVisible(m_buttonsVisible && !m_readOnly);
+    m_ui->newAttachmentButton->setVisible(m_buttonsVisible && !m_readOnly);
     m_ui->removeAttachmentButton->setVisible(m_buttonsVisible && !m_readOnly);
     m_ui->renameAttachmentButton->setVisible(m_buttonsVisible && !m_readOnly);
 }

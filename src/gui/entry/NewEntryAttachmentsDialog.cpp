@@ -17,7 +17,7 @@
 
 #include "NewEntryAttachmentsDialog.h"
 #include "core/EntryAttachments.h"
-#include "ui_NewEntryAttachmentsDialog.h"
+#include "ui_EntryAttachmentsDialog.h"
 
 #include <QMessageBox>
 #include <QPushButton>
@@ -25,9 +25,17 @@
 NewEntryAttachmentsDialog::NewEntryAttachmentsDialog(QPointer<EntryAttachments> attachments, QWidget* parent)
     : QDialog(parent)
     , m_attachments(std::move(attachments))
-    , m_ui(new Ui::NewEntryAttachmentsDialog)
+    , m_ui(new Ui::EntryAttachmentsDialog)
 {
+    Q_ASSERT(m_attachments);
+
     m_ui->setupUi(this);
+
+    setWindowTitle(tr("New entry attachment"));
+
+    m_ui->dialogButtons->clear();
+    m_ui->dialogButtons->addButton(QDialogButtonBox::Ok);
+    m_ui->dialogButtons->addButton(QDialogButtonBox::Cancel);
 
     connect(m_ui->dialogButtons, SIGNAL(accepted()), this, SLOT(saveAttachment()));
     connect(m_ui->dialogButtons, SIGNAL(rejected()), this, SLOT(reject()));

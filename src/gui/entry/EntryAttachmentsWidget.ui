@@ -101,6 +101,16 @@
        </widget>
       </item>
       <item>
+       <widget class="QPushButton" name="previewButton">
+        <property name="enabled">
+         <bool>false</bool>
+        </property>
+        <property name="text">
+         <string>Preview</string>
+        </property>
+       </widget>
+      </item>
+      <item>
        <widget class="QPushButton" name="openAttachmentButton">
         <property name="enabled">
          <bool>false</bool>
