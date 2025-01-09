@@ -22,7 +22,39 @@
 #include <QDialogButtonBox>
 #include <QMimeDatabase>
 #include <QTextCursor>
-#include <QtGlobal>
+#include <QtDebug>
+
+#include <algorithm>
+#include <array>
+
+namespace
+{
+    bool isTextCompatibleFormat(const QString& format) noexcept
+    {
+        constexpr static std::array Formats = {
+            "text/",
+            "application/json",
+            "application/xml",
+            "application/soap+xml",
+            "application/x-yaml",
+            "application/protobuf",
+        };
+
+        return std::any_of(
+            std::cbegin(Formats), std::cend(Formats), [&format](const auto& f) { return format.startsWith(f); });
+    }
+
+    bool isImageCompatibleFormat(const QString& format) noexcept
+    {
+        constexpr static std::array Formats = {
+            "image/",
+        };
+
+        return std::any_of(
+            std::cbegin(Formats), std::cend(Formats), [&format](const auto& f) { return format.startsWith(f); });
+    }
+
+} // namespace
 
 PreviewEntryAttachmentsDialog::PreviewEntryAttachmentsDialog(QPointer<EntryAttachments> attachments, QWidget* parent)
     : QDialog(parent)
@@ -91,11 +123,15 @@ PreviewEntryAttachmentsDialog::AttachmentType PreviewEntryAttachmentsDialog::att
     QMimeDatabase mimeDb{};
     const auto mime = mimeDb.mimeTypeForData(data);
 
-    if (auto mimeName = mime.name(); mimeName.startsWith("image/")) {
+    auto mimeName = mime.name();
+
+    if (isImageCompatibleFormat(mimeName)) {
         return AttachmentType::Image;
-    } else if (mimeName.startsWith("text/")) {
+    } else if (isTextCompatibleFormat(mimeName)) {
         return AttachmentType::PlantText;
     }
+
+    qWarning() << tr("Unknown attachment type: %1").arg(mimeName);
 
     return AttachmentType::Unknown;
 }
