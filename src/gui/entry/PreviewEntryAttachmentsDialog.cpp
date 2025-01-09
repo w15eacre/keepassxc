@@ -37,6 +37,7 @@ PreviewEntryAttachmentsDialog::PreviewEntryAttachmentsDialog(QPointer<EntryAttac
 
     m_ui->titleEdit->setReadOnly(true);
     m_ui->attachmentTextEdit->setReadOnly(true);
+    m_ui->errorLabel->setVisible(false);
 
     m_ui->dialogButtons->clear();
     m_ui->dialogButtons->addButton(QDialogButtonBox::Close);

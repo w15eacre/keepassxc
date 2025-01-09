@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>337</width>
-    <height>289</height>
+    <height>294</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -101,7 +101,7 @@
        </widget>
       </item>
       <item>
-       <widget class="QPushButton" name="previewButton">
+       <widget class="QPushButton" name="previewAttachmentButton">
         <property name="enabled">
          <bool>false</bool>
         </property>

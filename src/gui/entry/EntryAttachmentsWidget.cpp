@@ -71,7 +71,7 @@ EntryAttachmentsWidget::EntryAttachmentsWidget(QWidget* parent)
     connect(m_ui->openAttachmentButton, SIGNAL(clicked()), SLOT(openSelectedAttachments()));
     connect(m_ui->addAttachmentButton, SIGNAL(clicked()), SLOT(insertAttachments()));
     connect(m_ui->newAttachmentButton, SIGNAL(clicked()), SLOT(newAttachments()));
-    connect(m_ui->previewButton, SIGNAL(clicked()), SLOT(previewAttachments()));
+    connect(m_ui->previewAttachmentButton, SIGNAL(clicked()), SLOT(previewAttachments()));
     connect(m_ui->removeAttachmentButton, SIGNAL(clicked()), SLOT(removeSelectedAttachments()));
     connect(m_ui->renameAttachmentButton, SIGNAL(clicked()), SLOT(renameSelectedAttachments()));
 
@@ -175,7 +175,7 @@ void EntryAttachmentsWidget::newAttachments()
         return;
     }
 
-    NewEntryAttachmentsDialog newEntryDialog{m_entryAttachments, this};
+    NewEntryAttachmentsDialog newEntryDialog{m_entryAttachments};
     if (newEntryDialog.exec() == QDialog::Accepted) {
         emit widgetUpdated();
     }
@@ -191,7 +191,7 @@ void EntryAttachmentsWidget::previewAttachments()
         return;
     }
 
-    PreviewEntryAttachmentsDialog previewDialog{m_entryAttachments, this};
+    PreviewEntryAttachmentsDialog previewDialog{m_entryAttachments};
     previewDialog.setAttachment(m_attachmentsModel->keyByIndex(index));
 
     previewDialog.exec();
@@ -339,7 +339,7 @@ void EntryAttachmentsWidget::updateButtonsEnabled()
     m_ui->renameAttachmentButton->setEnabled(hasSelection && !m_readOnly);
 
     m_ui->saveAttachmentButton->setEnabled(hasSelection);
-    m_ui->previewButton->setEnabled(hasSelection);
+    m_ui->previewAttachmentButton->setEnabled(hasSelection);
     m_ui->openAttachmentButton->setEnabled(hasSelection);
 }
 
