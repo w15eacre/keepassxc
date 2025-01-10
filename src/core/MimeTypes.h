@@ -17,35 +17,17 @@
 
 #pragma once
 
-#include <QDialog>
-#include <QPointer>
+#include <QString>
 
-#include <optional>
-
-namespace Ui
+namespace core
 {
-    class EntryAttachmentsDialog;
-}
+    enum class MimeType : uint8_t
+    {
+        Image,
+        PlantText,
+        Unknown
+    };
 
-class QByteArray;
-class EntryAttachments;
+    MimeType toMimeType(const QString& mimeName);
 
-class NewEntryAttachmentsDialog : public QDialog
-{
-    Q_OBJECT
-public:
-    explicit NewEntryAttachmentsDialog(QPointer<EntryAttachments> attachments, QWidget* parent = nullptr);
-    ~NewEntryAttachmentsDialog() override;
-
-private slots:
-    void saveAttachment();
-    void fileNameTextChanged(const QString& fileName);
-
-private:
-    std::optional<QString> ValidateFileName(const QString& fileName) const;
-
-private:
-    QPointer<EntryAttachments> m_attachments;
-
-    QScopedPointer<Ui::EntryAttachmentsDialog> m_ui;
-};
+} // namespace core

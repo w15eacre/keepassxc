@@ -59,6 +59,7 @@ set(core_SOURCES
         core/Tools.cpp
         core/Totp.cpp
         core/Translator.cpp
+        core/MimeTypes.cpp
         cli/Utils.cpp
         cli/TextStream.cpp
         crypto/Crypto.cpp

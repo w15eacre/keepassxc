@@ -24,37 +24,6 @@
 #include <QTextCursor>
 #include <QtDebug>
 
-#include <algorithm>
-#include <array>
-
-namespace
-{
-    bool isTextCompatibleFormat(const QString& format) noexcept
-    {
-        constexpr static std::array Formats = {
-            "text/",
-            "application/json",
-            "application/xml",
-            "application/soap+xml",
-            "application/x-yaml",
-            "application/protobuf",
-        };
-
-        return std::any_of(
-            std::cbegin(Formats), std::cend(Formats), [&format](const auto& f) { return format.startsWith(f); });
-    }
-
-    bool isImageCompatibleFormat(const QString& format) noexcept
-    {
-        constexpr static std::array Formats = {
-            "image/",
-        };
-
-        return std::any_of(
-            std::cbegin(Formats), std::cend(Formats), [&format](const auto& f) { return format.startsWith(f); });
-    }
-
-} // namespace
 
 PreviewEntryAttachmentsDialog::PreviewEntryAttachmentsDialog(QPointer<EntryAttachments> attachments, QWidget* parent)
     : QDialog(parent)
@@ -91,11 +60,11 @@ void PreviewEntryAttachmentsDialog::setAttachment(const QString& name)
 
 void PreviewEntryAttachmentsDialog::update()
 {
-    if (m_type == AttachmentType::Unknown) {
+    if (m_type == core::MimeType::Unknown) {
         updateTextAttachment(tr("No preview available").toUtf8());
-    } else if (const auto data = m_attachments->value(m_name); m_type == AttachmentType::Image) {
+    } else if (const auto data = m_attachments->value(m_name); m_type == core::MimeType::Image) {
         updateImageAttachment(data);
-    } else if (m_type == AttachmentType::PlantText) {
+    } else if (m_type == core::MimeType::PlantText) {
         updateTextAttachment(data);
     }
 }
@@ -116,31 +85,21 @@ void PreviewEntryAttachmentsDialog::updateImageAttachment(const QByteArray& data
     cursor.insertImage(image.scaled(m_ui->attachmentTextEdit->size(), Qt::KeepAspectRatio, Qt::SmoothTransformation));
 }
 
-PreviewEntryAttachmentsDialog::AttachmentType PreviewEntryAttachmentsDialog::attachmentType(const QString& name) const
+core::MimeType PreviewEntryAttachmentsDialog::attachmentType(const QString& name) const
 {
     const auto data = m_attachments->value(name);
 
     QMimeDatabase mimeDb{};
     const auto mime = mimeDb.mimeTypeForData(data);
 
-    auto mimeName = mime.name();
-
-    if (isImageCompatibleFormat(mimeName)) {
-        return AttachmentType::Image;
-    } else if (isTextCompatibleFormat(mimeName)) {
-        return AttachmentType::PlantText;
-    }
-
-    qWarning() << tr("Unknown attachment type: %1").arg(mimeName);
-
-    return AttachmentType::Unknown;
+    return core::toMimeType(mime.name());
 }
 
 void PreviewEntryAttachmentsDialog::resizeEvent(QResizeEvent* event)
 {
     QDialog::resizeEvent(event);
 
-    if (m_type == AttachmentType::Image) {
+    if (m_type == core::MimeType::Image) {
         update();
     }
 }

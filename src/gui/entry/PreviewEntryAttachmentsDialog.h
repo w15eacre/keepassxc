@@ -15,8 +15,9 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef PREVIEWENTRYATTACHMENTSWIDGET_H
-#define PREVIEWENTRYATTACHMENTSWIDGET_H
+#pragma once
+
+#include "core/MimeTypes.h"
 
 #include <QDialog>
 #include <QPointer>
@@ -39,16 +40,9 @@ public:
     void setAttachment(const QString& name);
 
 private:
-    enum class AttachmentType
-    {
-        Image,
-        PlantText,
-        Unknown
-    };
-
     void resizeEvent(QResizeEvent* event) override;
 
-    AttachmentType attachmentType(const QString& name) const;
+    core::MimeType attachmentType(const QString& name) const;
 
     void update();
     void updateTextAttachment(const QByteArray& data);
@@ -60,7 +54,5 @@ private:
     QScopedPointer<Ui::EntryAttachmentsDialog> m_ui;
 
     QString m_name;
-    AttachmentType m_type{AttachmentType::Unknown};
+    core::MimeType m_type{core::MimeType::Unknown};
 };
-
-#endif // PREVIEWENTRYATTACHMENTSWIDGET_H
