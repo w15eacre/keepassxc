@@ -73,7 +73,6 @@ EntryAttachmentsWidget::EntryAttachmentsWidget(QWidget* parent)
     connect(m_ui->newAttachmentButton, SIGNAL(clicked()), SLOT(newAttachments()));
     connect(m_ui->previewAttachmentButton, SIGNAL(clicked()), SLOT(previewSelectedAttachment()));
     connect(m_ui->removeAttachmentButton, SIGNAL(clicked()), SLOT(removeSelectedAttachments()));
-    connect(m_ui->renameAttachmentButton, SIGNAL(clicked()), SLOT(renameSelectedAttachments()));
 
     updateButtonsVisible();
     updateButtonsEnabled();
@@ -248,12 +247,6 @@ void EntryAttachmentsWidget::removeSelectedAttachments()
     }
 }
 
-void EntryAttachmentsWidget::renameSelectedAttachments()
-{
-    Q_ASSERT(m_entryAttachments);
-    m_ui->attachmentsView->edit(m_ui->attachmentsView->selectionModel()->selectedIndexes().first());
-}
-
 void EntryAttachmentsWidget::saveSelectedAttachments()
 {
     Q_ASSERT(m_entryAttachments);
@@ -358,11 +351,21 @@ void EntryAttachmentsWidget::updateButtonsEnabled()
     m_ui->addAttachmentButton->setEnabled(!m_readOnly);
     m_ui->newAttachmentButton->setEnabled(!m_readOnly);
     m_ui->removeAttachmentButton->setEnabled(hasSelection && !m_readOnly);
-    m_ui->renameAttachmentButton->setEnabled(hasSelection && !m_readOnly);
 
     m_ui->saveAttachmentButton->setEnabled(hasSelection);
     m_ui->previewAttachmentButton->setEnabled(hasSelection);
     m_ui->openAttachmentButton->setEnabled(hasSelection);
+
+    updateSpacers();
+}
+
+void EntryAttachmentsWidget::updateSpacers()
+{
+    if (m_buttonsVisible && !m_readOnly) {
+        m_ui->previewVSpacer->changeSize(20, 40, QSizePolicy::Fixed, QSizePolicy::Expanding);
+    } else {
+        m_ui->previewVSpacer->changeSize(0, 0, QSizePolicy::Fixed, QSizePolicy::Fixed);
+    }
 }
 
 void EntryAttachmentsWidget::updateButtonsVisible()
@@ -370,7 +373,8 @@ void EntryAttachmentsWidget::updateButtonsVisible()
     m_ui->addAttachmentButton->setVisible(m_buttonsVisible && !m_readOnly);
     m_ui->newAttachmentButton->setVisible(m_buttonsVisible && !m_readOnly);
     m_ui->removeAttachmentButton->setVisible(m_buttonsVisible && !m_readOnly);
-    m_ui->renameAttachmentButton->setVisible(m_buttonsVisible && !m_readOnly);
+
+    updateSpacers();
 }
 
 bool EntryAttachmentsWidget::insertAttachments(const QStringList& filenames, QString& errorMessage)
