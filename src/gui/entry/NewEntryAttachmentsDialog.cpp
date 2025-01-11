@@ -46,17 +46,19 @@ NewEntryAttachmentsDialog::NewEntryAttachmentsDialog(QPointer<EntryAttachments> 
 
 NewEntryAttachmentsDialog::~NewEntryAttachmentsDialog() = default;
 
-std::optional<QString> NewEntryAttachmentsDialog::ValidateFileName(const QString& fileName) const
+bool NewEntryAttachmentsDialog::validateFileName(const QString& fileName, QString& error) const
 {
     if (fileName.isEmpty()) {
-        return tr("Attachment name cannot be empty");
+        error = tr("Attachment name cannot be empty");
+        return false;
     }
 
     if (m_attachments->hasKey(fileName)) {
-        return tr("Attachment with the same name already exists");
+        error = tr("Attachment with the same name already exists");
+        return false;
     }
 
-    return std::nullopt;
+    return true;
 }
 
 void NewEntryAttachmentsDialog::saveAttachment()
@@ -64,8 +66,9 @@ void NewEntryAttachmentsDialog::saveAttachment()
     auto fileName = m_ui->titleEdit->text();
     auto text = m_ui->attachmentTextEdit->toPlainText().toUtf8();
 
-    if (auto error = ValidateFileName(fileName); error) {
-        QMessageBox::warning(this, tr("Save attachment"), error.value());
+    QString error;
+    if (validateFileName(fileName, error)) {
+        QMessageBox::warning(this, tr("Save attachment"), error);
         return;
     }
 
@@ -76,12 +79,14 @@ void NewEntryAttachmentsDialog::saveAttachment()
 
 void NewEntryAttachmentsDialog::fileNameTextChanged(const QString& fileName)
 {
-    const auto error = ValidateFileName(fileName);
+    QString error;
+    bool valid = validateFileName(fileName, error);
 
-    m_ui->errorLabel->setText(error.value_or(QString{}));
-    m_ui->errorLabel->setVisible(error.has_value());
+    m_ui->errorLabel->setText(error);
+    m_ui->errorLabel->setVisible(!valid);
 
-    if (auto okButton = m_ui->dialogButtons->button(QDialogButtonBox::Ok); okButton) {
-        okButton->setDisabled(error.has_value());
+    auto okButton = m_ui->dialogButtons->button(QDialogButtonBox::Ok);
+    if (okButton) {
+        okButton->setDisabled(!valid);
     }
 }

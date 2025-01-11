@@ -20,8 +20,6 @@
 #include <QDialog>
 #include <QPointer>
 
-#include <optional>
-
 namespace Ui
 {
     class EntryAttachmentsDialog;
@@ -33,6 +31,7 @@ class EntryAttachments;
 class NewEntryAttachmentsDialog : public QDialog
 {
     Q_OBJECT
+
 public:
     explicit NewEntryAttachmentsDialog(QPointer<EntryAttachments> attachments, QWidget* parent = nullptr);
     ~NewEntryAttachmentsDialog() override;
@@ -42,10 +41,8 @@ private slots:
     void fileNameTextChanged(const QString& fileName);
 
 private:
-    std::optional<QString> ValidateFileName(const QString& fileName) const;
+    bool validateFileName(const QString& fileName, QString& error) const;
 
-private:
     QPointer<EntryAttachments> m_attachments;
-
     QScopedPointer<Ui::EntryAttachmentsDialog> m_ui;
 };

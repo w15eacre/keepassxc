@@ -16,11 +16,13 @@
  */
 
 #include "EntryAttachmentsWidget.h"
+
+#include "EntryAttachmentsModel.h"
 #include "NewEntryAttachmentsDialog.h"
 #include "PreviewEntryAttachmentsDialog.h"
 #include "ui_EntryAttachmentsWidget.h"
 
-#include <QDir>
+#include <QDebug>
 #include <QDropEvent>
 #include <QMimeData>
 #include <QStandardPaths>
@@ -31,7 +33,6 @@
 #include "core/Tools.h"
 #include "gui/FileDialog.h"
 #include "gui/MessageBox.h"
-#include <QDebug>
 
 EntryAttachmentsWidget::EntryAttachmentsWidget(QWidget* parent)
     : QWidget(parent)
@@ -48,12 +49,12 @@ EntryAttachmentsWidget::EntryAttachmentsWidget(QWidget* parent)
     m_ui->attachmentsView->viewport()->installEventFilter(this);
 
     m_ui->attachmentsView->setModel(m_attachmentsModel);
-    m_ui->attachmentsView->verticalHeader()->hide();
-    m_ui->attachmentsView->horizontalHeader()->setStretchLastSection(true);
-    m_ui->attachmentsView->horizontalHeader()->resizeSection(EntryAttachmentsModel::NameColumn, 400);
-    m_ui->attachmentsView->setSelectionBehavior(QAbstractItemView::SelectRows);
-    m_ui->attachmentsView->setSelectionMode(QAbstractItemView::ExtendedSelection);
-    m_ui->attachmentsView->setEditTriggers(QAbstractItemView::SelectedClicked);
+    m_ui->attachmentsView->horizontalHeader()->setMinimumSectionSize(70);
+    m_ui->attachmentsView->horizontalHeader()->setSectionResizeMode(EntryAttachmentsModel::NameColumn,
+                                                                    QHeaderView::Stretch);
+    m_ui->attachmentsView->horizontalHeader()->setSectionResizeMode(EntryAttachmentsModel::SizeColumn,
+                                                                    QHeaderView::ResizeToContents);
+    m_ui->attachmentsView->verticalHeader()->setSectionResizeMode(QHeaderView::ResizeToContents);
 
     connect(this, SIGNAL(buttonsVisibleChanged(bool)), this, SLOT(updateButtonsVisible()));
     connect(this, SIGNAL(readOnlyChanged(bool)), SLOT(updateButtonsEnabled()));
@@ -66,7 +67,7 @@ EntryAttachmentsWidget::EntryAttachmentsWidget(QWidget* parent)
     // clang-format on
     connect(this, SIGNAL(readOnlyChanged(bool)), m_attachmentsModel, SLOT(setReadOnly(bool)));
 
-    connect(m_ui->attachmentsView, SIGNAL(doubleClicked(QModelIndex)), SLOT(openAttachment(QModelIndex)));
+    connect(m_ui->attachmentsView, SIGNAL(doubleClicked(QModelIndex)), SLOT(previewSelectedAttachment()));
     connect(m_ui->saveAttachmentButton, SIGNAL(clicked()), SLOT(saveSelectedAttachments()));
     connect(m_ui->openAttachmentButton, SIGNAL(clicked()), SLOT(openSelectedAttachments()));
     connect(m_ui->addAttachmentButton, SIGNAL(clicked()), SLOT(insertAttachments()));
@@ -174,7 +175,7 @@ void EntryAttachmentsWidget::newAttachments()
         return;
     }
 
-    NewEntryAttachmentsDialog newEntryDialog{m_entryAttachments};
+    NewEntryAttachmentsDialog newEntryDialog(m_entryAttachments, this);
     if (newEntryDialog.exec() == QDialog::Accepted) {
         emit widgetUpdated();
     }
@@ -191,13 +192,12 @@ void EntryAttachmentsWidget::previewSelectedAttachment()
     }
 
     // Set selection to the first
-    m_ui->attachmentsView->clearSelection();
     m_ui->attachmentsView->setCurrentIndex(index);
 
     auto name = m_attachmentsModel->keyByIndex(index);
     auto data = m_entryAttachments->value(name);
 
-    PreviewEntryAttachmentsDialog previewDialog;
+    PreviewEntryAttachmentsDialog previewDialog(this);
     previewDialog.setAttachment(name, data);
 
     connect(&previewDialog, SIGNAL(openAttachment(QString)), SLOT(openSelectedAttachments()));
