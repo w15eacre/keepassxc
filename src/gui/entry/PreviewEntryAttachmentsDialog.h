@@ -27,36 +27,33 @@ namespace Ui
     class EntryAttachmentsDialog;
 }
 
-class QByteArray;
-class EntryAttachments;
-
 class PreviewEntryAttachmentsDialog : public QDialog
 {
     Q_OBJECT
+
 public:
-    explicit PreviewEntryAttachmentsDialog(QPointer<EntryAttachments> attachments, QWidget* parent = nullptr);
+    explicit PreviewEntryAttachmentsDialog(QWidget* parent = nullptr);
     ~PreviewEntryAttachmentsDialog() override;
 
-    void setAttachment(const QString& name);
+    void setAttachment(const QString& name, const QByteArray& data);
 
-Q_SIGNALS:
+signals:
     void openAttachment(const QString& name);
     void saveAttachment(const QString& name);
 
-private:
-    void initDialogButtons();
-    void enableReadOnlyMode();
-
+protected:
     void resizeEvent(QResizeEvent* event) override;
 
-    Tools::MimeType attachmentType(const QString& name) const;
+private:
+    Tools::MimeType attachmentType(const QByteArray& data) const;
 
     void update();
     void updateTextAttachment(const QByteArray& data);
     void updateImageAttachment(const QByteArray& data);
 
     QScopedPointer<Ui::EntryAttachmentsDialog> m_ui;
-    QPointer<EntryAttachments> m_attachments;
+
     QString m_name;
+    QByteArray m_data;
     Tools::MimeType m_type{Tools::MimeType::Unknown};
 };

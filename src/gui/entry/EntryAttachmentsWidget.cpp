@@ -71,7 +71,7 @@ EntryAttachmentsWidget::EntryAttachmentsWidget(QWidget* parent)
     connect(m_ui->openAttachmentButton, SIGNAL(clicked()), SLOT(openSelectedAttachments()));
     connect(m_ui->addAttachmentButton, SIGNAL(clicked()), SLOT(insertAttachments()));
     connect(m_ui->newAttachmentButton, SIGNAL(clicked()), SLOT(newAttachments()));
-    connect(m_ui->previewAttachmentButton, SIGNAL(clicked()), SLOT(previewAttachments()));
+    connect(m_ui->previewAttachmentButton, SIGNAL(clicked()), SLOT(previewSelectedAttachment()));
     connect(m_ui->removeAttachmentButton, SIGNAL(clicked()), SLOT(removeSelectedAttachments()));
     connect(m_ui->renameAttachmentButton, SIGNAL(clicked()), SLOT(renameSelectedAttachments()));
 
@@ -181,7 +181,7 @@ void EntryAttachmentsWidget::newAttachments()
     }
 }
 
-void EntryAttachmentsWidget::previewAttachments()
+void EntryAttachmentsWidget::previewSelectedAttachment()
 {
     Q_ASSERT(m_entryAttachments);
 
@@ -191,11 +191,27 @@ void EntryAttachmentsWidget::previewAttachments()
         return;
     }
 
-    PreviewEntryAttachmentsDialog previewDialog{m_entryAttachments};
-    previewDialog.setAttachment(m_attachmentsModel->keyByIndex(index));
+    // Set selection to the first
+    m_ui->attachmentsView->clearSelection();
+    m_ui->attachmentsView->setCurrentIndex(index);
+
+    auto name = m_attachmentsModel->keyByIndex(index);
+    auto data = m_entryAttachments->value(name);
+
+    PreviewEntryAttachmentsDialog previewDialog;
+    previewDialog.setAttachment(name, data);
 
     connect(&previewDialog, SIGNAL(openAttachment(QString)), SLOT(openSelectedAttachments()));
     connect(&previewDialog, SIGNAL(saveAttachment(QString)), SLOT(saveSelectedAttachments()));
+    // Refresh the preview if the attachment changes
+    connect(m_entryAttachments,
+            &EntryAttachments::keyModified,
+            &previewDialog,
+            [&previewDialog, &name, this](const QString& key) {
+                if (key == name) {
+                    previewDialog.setAttachment(name, m_entryAttachments->value(name));
+                }
+            });
 
     previewDialog.exec();
 
@@ -327,7 +343,7 @@ void EntryAttachmentsWidget::openSelectedAttachments()
         if (!m_entryAttachments->openAttachment(m_attachmentsModel->keyByIndex(index), &errorMessage)) {
             const QString filename = m_attachmentsModel->keyByIndex(index);
             errors.append(QString("%1 - %2").arg(filename, errorMessage));
-        };
+        }
     }
 
     if (!errors.isEmpty()) {

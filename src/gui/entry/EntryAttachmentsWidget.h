@@ -58,7 +58,7 @@ signals:
 private slots:
     void insertAttachments();
     void newAttachments();
-    void previewAttachments();
+    void previewSelectedAttachment();
     void removeSelectedAttachments();
     void renameSelectedAttachments();
     void saveSelectedAttachments();

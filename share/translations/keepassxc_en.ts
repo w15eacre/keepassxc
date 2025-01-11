@@ -7171,7 +7171,7 @@ Do you want to overwrite it?</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>Open</source>
+        <source>Image format not supported</source>
         <translation type="unfinished"></translation>
     </message>
 </context>

@@ -16,7 +16,6 @@
  */
 
 #include "PreviewEntryAttachmentsDialog.h"
-#include "core/EntryAttachments.h"
 #include "ui_EntryAttachmentsDialog.h"
 
 #include <QDialogButtonBox>
@@ -25,65 +24,46 @@
 #include <QTextCursor>
 #include <QtDebug>
 
-PreviewEntryAttachmentsDialog::PreviewEntryAttachmentsDialog(QPointer<EntryAttachments> attachments, QWidget* parent)
+PreviewEntryAttachmentsDialog::PreviewEntryAttachmentsDialog(QWidget* parent)
     : QDialog(parent)
-    , m_attachments(std::move(attachments))
     , m_ui(new Ui::EntryAttachmentsDialog)
 {
-    Q_ASSERT(m_attachments);
-
     m_ui->setupUi(this);
 
     setWindowTitle(tr("Preview entry attachment"));
     // Disable the help button in the title bar
     setWindowFlags(windowFlags() & ~Qt::WindowContextHelpButtonHint);
 
-    connect(m_attachments, &EntryAttachments::keyModified, [this](const QString& name) {
-        if (m_name == name) {
-            update();
-        }
-    });
+    // Set to read-only
+    m_ui->titleEdit->setReadOnly(true);
+    m_ui->attachmentTextEdit->setReadOnly(true);
+    m_ui->errorLabel->setVisible(false);
 
-    enableReadOnlyMode();
-    initDialogButtons();
-}
-
-PreviewEntryAttachmentsDialog::~PreviewEntryAttachmentsDialog() = default;
-
-void PreviewEntryAttachmentsDialog::initDialogButtons()
-{
-    m_ui->dialogButtons->clear();
-    m_ui->dialogButtons->addButton(QDialogButtonBox::Close);
-    m_ui->dialogButtons->addButton(QDialogButtonBox::Save);
-
-    if (auto openButton = m_ui->dialogButtons->addButton(QDialogButtonBox::Open); openButton) {
-        openButton->setText(tr("Open"));
-    }
+    // Initialize dialog buttons
+    m_ui->dialogButtons->setStandardButtons(QDialogButtonBox::Close | QDialogButtonBox::Open | QDialogButtonBox::Save);
+    auto closeButton = m_ui->dialogButtons->button(QDialogButtonBox::Close);
+    closeButton->setDefault(true);
 
     connect(m_ui->dialogButtons, SIGNAL(rejected()), this, SLOT(reject()));
     connect(m_ui->dialogButtons, &QDialogButtonBox::clicked, [this](QAbstractButton* button) {
-        if (auto standartButton = m_ui->dialogButtons->standardButton(button);
-            standartButton == QDialogButtonBox::Open) {
+        auto pressedButton = m_ui->dialogButtons->standardButton(button);
+        if (pressedButton == QDialogButtonBox::Open) {
             emit openAttachment(m_name);
-        } else if (standartButton == QDialogButtonBox::Save) {
+        } else if (pressedButton == QDialogButtonBox::Save) {
             emit saveAttachment(m_name);
         }
     });
 }
 
-void PreviewEntryAttachmentsDialog::enableReadOnlyMode()
-{
-    m_ui->titleEdit->setReadOnly(true);
-    m_ui->attachmentTextEdit->setReadOnly(true);
-    m_ui->errorLabel->setVisible(false);
-}
+PreviewEntryAttachmentsDialog::~PreviewEntryAttachmentsDialog() = default;
 
-void PreviewEntryAttachmentsDialog::setAttachment(const QString& name)
+void PreviewEntryAttachmentsDialog::setAttachment(const QString& name, const QByteArray& data)
 {
     m_name = name;
-    m_type = attachmentType(m_name);
-
     m_ui->titleEdit->setText(m_name);
+
+    m_type = attachmentType(data);
+    m_data = data;
 
     update();
 }
@@ -92,10 +72,10 @@ void PreviewEntryAttachmentsDialog::update()
 {
     if (m_type == Tools::MimeType::Unknown) {
         updateTextAttachment(tr("No preview available").toUtf8());
-    } else if (const auto data = m_attachments->value(m_name); m_type == Tools::MimeType::Image) {
-        updateImageAttachment(data);
+    } else if (m_type == Tools::MimeType::Image) {
+        updateImageAttachment(m_data);
     } else if (m_type == Tools::MimeType::PlainText) {
-        updateTextAttachment(data);
+        updateTextAttachment(m_data);
     }
 }
 
@@ -107,18 +87,26 @@ void PreviewEntryAttachmentsDialog::updateTextAttachment(const QByteArray& data)
 void PreviewEntryAttachmentsDialog::updateImageAttachment(const QByteArray& data)
 {
     QImage image{};
-    image.loadFromData(data);
+    if (!image.loadFromData(data)) {
+        updateTextAttachment(tr("Image format not supported").toUtf8());
+        return;
+    }
 
     m_ui->attachmentTextEdit->clear();
     auto cursor = m_ui->attachmentTextEdit->textCursor();
 
-    cursor.insertImage(image.scaled(m_ui->attachmentTextEdit->size(), Qt::KeepAspectRatio, Qt::SmoothTransformation));
+    // Scale the image to the contents rect minus another set of margins to avoid scrollbars
+    auto margins = m_ui->attachmentTextEdit->contentsMargins();
+    auto size = m_ui->attachmentTextEdit->contentsRect().size();
+    size.setWidth(size.width() - margins.left() - margins.right());
+    size.setHeight(size.height() - margins.top() - margins.bottom());
+    image = image.scaled(size, Qt::KeepAspectRatio, Qt::SmoothTransformation);
+
+    cursor.insertImage(image);
 }
 
-Tools::MimeType PreviewEntryAttachmentsDialog::attachmentType(const QString& name) const
+Tools::MimeType PreviewEntryAttachmentsDialog::attachmentType(const QByteArray& data) const
 {
-    const auto data = m_attachments->value(name);
-
     QMimeDatabase mimeDb{};
     const auto mime = mimeDb.mimeTypeForData(data);
 
