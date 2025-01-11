@@ -17,7 +17,7 @@
 
 #pragma once
 
-#include "core/MimeTypes.h"
+#include "core/Tools.h"
 
 #include <QDialog>
 #include <QPointer>
@@ -49,17 +49,14 @@ private:
 
     void resizeEvent(QResizeEvent* event) override;
 
-    core::MimeType attachmentType(const QString& name) const;
+    Tools::MimeType attachmentType(const QString& name) const;
 
     void update();
     void updateTextAttachment(const QByteArray& data);
     void updateImageAttachment(const QByteArray& data);
 
-private:
-    QPointer<EntryAttachments> m_attachments;
-
     QScopedPointer<Ui::EntryAttachmentsDialog> m_ui;
-
+    QPointer<EntryAttachments> m_attachments;
     QString m_name;
-    core::MimeType m_type{core::MimeType::Unknown};
+    Tools::MimeType m_type{Tools::MimeType::Unknown};
 };

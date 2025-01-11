@@ -90,11 +90,11 @@ void PreviewEntryAttachmentsDialog::setAttachment(const QString& name)
 
 void PreviewEntryAttachmentsDialog::update()
 {
-    if (m_type == core::MimeType::Unknown) {
+    if (m_type == Tools::MimeType::Unknown) {
         updateTextAttachment(tr("No preview available").toUtf8());
-    } else if (const auto data = m_attachments->value(m_name); m_type == core::MimeType::Image) {
+    } else if (const auto data = m_attachments->value(m_name); m_type == Tools::MimeType::Image) {
         updateImageAttachment(data);
-    } else if (m_type == core::MimeType::PlantText) {
+    } else if (m_type == Tools::MimeType::PlainText) {
         updateTextAttachment(data);
     }
 }
@@ -115,21 +115,21 @@ void PreviewEntryAttachmentsDialog::updateImageAttachment(const QByteArray& data
     cursor.insertImage(image.scaled(m_ui->attachmentTextEdit->size(), Qt::KeepAspectRatio, Qt::SmoothTransformation));
 }
 
-core::MimeType PreviewEntryAttachmentsDialog::attachmentType(const QString& name) const
+Tools::MimeType PreviewEntryAttachmentsDialog::attachmentType(const QString& name) const
 {
     const auto data = m_attachments->value(name);
 
     QMimeDatabase mimeDb{};
     const auto mime = mimeDb.mimeTypeForData(data);
 
-    return core::toMimeType(mime.name());
+    return Tools::toMimeType(mime.name());
 }
 
 void PreviewEntryAttachmentsDialog::resizeEvent(QResizeEvent* event)
 {
     QDialog::resizeEvent(event);
 
-    if (m_type == core::MimeType::Image) {
+    if (m_type == Tools::MimeType::Image) {
         update();
     }
 }

@@ -217,9 +217,6 @@ endif()
 add_unit_test(NAME testdatabase SOURCES TestDatabase.cpp
         LIBS testsupport ${TEST_LIBRARIES})
 
-add_unit_test(NAME testmimetypes SOURCES TestMimeTypes.cpp
-        LIBS testsupport ${TEST_LIBRARIES})
-
 add_unit_test(NAME testtools SOURCES TestTools.cpp
         LIBS ${TEST_LIBRARIES})
 
