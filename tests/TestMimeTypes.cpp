@@ -8,7 +8,7 @@ QTEST_GUILESS_MAIN(TestMimeType)
 
 void TestMimeType::testMimePlantText()
 {
-    const std::array TextMimeTypes = {
+    const std::array<QString, 14> TextMimeTypes = {
         "text/plain", // Plain text
         "text/html", // HTML documents
         "text/css", // CSS stylesheets
@@ -32,7 +32,7 @@ void TestMimeType::testMimePlantText()
 
 void TestMimeType::testMimeImage()
 {
-    constexpr static std::array ImageMimeTypes = {
+    const std::array<QString, 6> ImageMimeTypes = {
         "image/jpeg", // JPEG images
         "image/png", // PNG images
         "image/gif", // GIF images
@@ -48,7 +48,7 @@ void TestMimeType::testMimeImage()
 
 void TestMimeType::testMimeUnknown()
 {
-    constexpr static std::array UnknownMimeTypes = {
+    const std::array<QString, 22> UnknownMimeTypes = {
         "audio/mpeg", // MPEG audio files
         "video/mp4", // MP4 video files
         "application/pdf", // PDF documents

@@ -39,7 +39,14 @@ public:
 
     void setAttachment(const QString& name);
 
+Q_SIGNALS:
+    void openAttachment(const QString& name);
+    void saveAttachment(const QString& name);
+
 private:
+    void initDialogButtons();
+    void enableReadOnlyMode();
+
     void resizeEvent(QResizeEvent* event) override;
 
     core::MimeType attachmentType(const QString& name) const;

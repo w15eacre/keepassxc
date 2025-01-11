@@ -7170,6 +7170,10 @@ Do you want to overwrite it?</source>
         <source>No preview available</source>
         <translation type="unfinished"></translation>
     </message>
+    <message>
+        <source>Open</source>
+        <translation type="unfinished"></translation>
+    </message>
 </context>
 <context>
     <name>QMessageBox</name>

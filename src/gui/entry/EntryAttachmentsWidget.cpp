@@ -194,7 +194,13 @@ void EntryAttachmentsWidget::previewAttachments()
     PreviewEntryAttachmentsDialog previewDialog{m_entryAttachments};
     previewDialog.setAttachment(m_attachmentsModel->keyByIndex(index));
 
+    connect(&previewDialog, SIGNAL(openAttachment(QString)), SLOT(openSelectedAttachments()));
+    connect(&previewDialog, SIGNAL(saveAttachment(QString)), SLOT(saveSelectedAttachments()));
+
     previewDialog.exec();
+
+    // Set focus back to the widget to allow keyboard navigation
+    setFocus();
 }
 
 void EntryAttachmentsWidget::removeSelectedAttachments()

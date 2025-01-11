@@ -21,9 +21,9 @@
 
 #include <QDialogButtonBox>
 #include <QMimeDatabase>
+#include <QPushButton>
 #include <QTextCursor>
 #include <QtDebug>
-
 
 PreviewEntryAttachmentsDialog::PreviewEntryAttachmentsDialog(QPointer<EntryAttachments> attachments, QWidget* parent)
     : QDialog(parent)
@@ -35,18 +35,48 @@ PreviewEntryAttachmentsDialog::PreviewEntryAttachmentsDialog(QPointer<EntryAttac
     m_ui->setupUi(this);
 
     setWindowTitle(tr("Preview entry attachment"));
+    // Disable the help button in the title bar
+    setWindowFlags(windowFlags() & ~Qt::WindowContextHelpButtonHint);
 
-    m_ui->titleEdit->setReadOnly(true);
-    m_ui->attachmentTextEdit->setReadOnly(true);
-    m_ui->errorLabel->setVisible(false);
+    connect(m_attachments, &EntryAttachments::keyModified, [this](const QString& name) {
+        if (m_name == name) {
+            update();
+        }
+    });
 
-    m_ui->dialogButtons->clear();
-    m_ui->dialogButtons->addButton(QDialogButtonBox::Close);
-
-    connect(m_ui->dialogButtons, SIGNAL(rejected()), this, SLOT(reject()));
+    enableReadOnlyMode();
+    initDialogButtons();
 }
 
 PreviewEntryAttachmentsDialog::~PreviewEntryAttachmentsDialog() = default;
+
+void PreviewEntryAttachmentsDialog::initDialogButtons()
+{
+    m_ui->dialogButtons->clear();
+    m_ui->dialogButtons->addButton(QDialogButtonBox::Close);
+    m_ui->dialogButtons->addButton(QDialogButtonBox::Save);
+
+    if (auto openButton = m_ui->dialogButtons->addButton(QDialogButtonBox::Open); openButton) {
+        openButton->setText(tr("Open"));
+    }
+
+    connect(m_ui->dialogButtons, SIGNAL(rejected()), this, SLOT(reject()));
+    connect(m_ui->dialogButtons, &QDialogButtonBox::clicked, [this](QAbstractButton* button) {
+        if (auto standartButton = m_ui->dialogButtons->standardButton(button);
+            standartButton == QDialogButtonBox::Open) {
+            emit openAttachment(m_name);
+        } else if (standartButton == QDialogButtonBox::Save) {
+            emit saveAttachment(m_name);
+        }
+    });
+}
+
+void PreviewEntryAttachmentsDialog::enableReadOnlyMode()
+{
+    m_ui->titleEdit->setReadOnly(true);
+    m_ui->attachmentTextEdit->setReadOnly(true);
+    m_ui->errorLabel->setVisible(false);
+}
 
 void PreviewEntryAttachmentsDialog::setAttachment(const QString& name)
 {
