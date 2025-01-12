@@ -25,6 +25,7 @@
 #include <QDesktopServices>
 #include <QDir>
 #include <QProcessEnvironment>
+#include <QScopeGuard>
 #include <QSet>
 #include <QTemporaryFile>
 #include <QUrl>
