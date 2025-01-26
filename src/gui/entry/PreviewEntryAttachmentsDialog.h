@@ -50,10 +50,15 @@ private:
     void update();
     void updateTextAttachment(const QByteArray& data);
     void updateImageAttachment(const QByteArray& data);
+    void updateImageAttachment(const QImage& data);
+
+    QSize calculateImageSize();
 
     QScopedPointer<Ui::EntryAttachmentsDialog> m_ui;
 
     QString m_name;
     QByteArray m_data;
     Tools::MimeType m_type{Tools::MimeType::Unknown};
+
+    QHash<QByteArray, QImage> m_images;
 };

@@ -86,23 +86,36 @@ void PreviewEntryAttachmentsDialog::updateTextAttachment(const QByteArray& data)
 
 void PreviewEntryAttachmentsDialog::updateImageAttachment(const QByteArray& data)
 {
-    QImage image{};
-    if (!image.loadFromData(data)) {
-        updateTextAttachment(tr("Image format not supported").toUtf8());
-        return;
+    if (!m_images.contains(data)) {
+        QImage image{};
+        if (!image.loadFromData(data)) {
+            updateTextAttachment(tr("Image format not supported").toUtf8());
+            return;
+        }
+
+        m_images.insert(data, image);
     }
 
+    updateImageAttachment(m_images.value(data));
+}
+
+void PreviewEntryAttachmentsDialog::updateImageAttachment(const QImage& image)
+{
     m_ui->attachmentTextEdit->clear();
     auto cursor = m_ui->attachmentTextEdit->textCursor();
 
+    cursor.insertImage(image.scaled(calculateImageSize(), Qt::KeepAspectRatio, Qt::SmoothTransformation));
+}
+
+QSize PreviewEntryAttachmentsDialog::calculateImageSize()
+{
     // Scale the image to the contents rect minus another set of margins to avoid scrollbars
     auto margins = m_ui->attachmentTextEdit->contentsMargins();
     auto size = m_ui->attachmentTextEdit->contentsRect().size();
     size.setWidth(size.width() - margins.left() - margins.right());
     size.setHeight(size.height() - margins.top() - margins.bottom());
-    image = image.scaled(size, Qt::KeepAspectRatio, Qt::SmoothTransformation);
 
-    cursor.insertImage(image);
+    return size;
 }
 
 Tools::MimeType PreviewEntryAttachmentsDialog::attachmentType(const QByteArray& data) const
