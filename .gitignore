@@ -5,6 +5,7 @@ release*/
 .idea/
 *.iml
 *.kdev4
+*.cache
 
 \.vscode/
 *.swp
