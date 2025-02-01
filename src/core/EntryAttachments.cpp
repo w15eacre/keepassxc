@@ -237,8 +237,10 @@ bool EntryAttachments::openAttachment(const QString& key, QString* errorMessage)
         const bool saveOk = tmpFile.open() && tmpFile.setPermissions(QFile::ReadOwner | QFile::WriteOwner)
                             && tmpFile.write(attachmentData) == attachmentData.size() && tmpFile.flush();
 
-        if (!saveOk && errorMessage) {
-            *errorMessage = QString("%1 - %2").arg(key, tmpFile.errorString());
+        if (!saveOk) {
+            if (errorMessage) {
+                *errorMessage = QString("%1 - %2").arg(key, tmpFile.errorString());
+            }
             return false;
         }
 
@@ -252,6 +254,7 @@ bool EntryAttachments::openAttachment(const QString& key, QString* errorMessage)
         connect(watcher.data(), &FileWatcher::fileChanged, this, &EntryAttachments::attachmentFileModified);
         m_attachmentFileWatchers.insert(tmpFile.fileName(), watcher);
     } else if (auto path = m_openedAttachments.value(key); m_attachmentFileWatchers.contains(path)) {
+        // If we are already watching an open attachment file, overwrite it with the information from the entry
         auto watcher = m_attachmentFileWatchers.value(path);
         watcher->stop();
 
@@ -266,7 +269,9 @@ bool EntryAttachments::openAttachment(const QString& key, QString* errorMessage)
                             && file.write(attachmentData) == attachmentData.size() && file.flush();
 
         if (!saveOk) {
-            *errorMessage = QString("%1 - %2").arg(key, file.errorString());
+            if (errorMessage) {
+                *errorMessage = QString("%1 - %2").arg(key, file.errorString());
+            }
             return false;
         }
     }
@@ -274,10 +279,9 @@ bool EntryAttachments::openAttachment(const QString& key, QString* errorMessage)
     const bool openOk = QDesktopServices::openUrl(QUrl::fromLocalFile(m_openedAttachments.value(key)));
     if (!openOk && errorMessage) {
         *errorMessage = tr("Cannot open file \"%1\"").arg(key);
-        return false;
     }
 
-    return true;
+    return openOk;
 }
 
 void EntryAttachments::attachmentFileModified(const QString& path)
